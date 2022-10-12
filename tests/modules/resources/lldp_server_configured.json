@@ -1,0 +1,85 @@
+{
+    "lldp": {
+      "interface": [
+        {
+          "Ethernet16": {
+            "via": "LLDP",
+            "rid": "1",
+            "age": "33 days, 21:52:50",
+            "chassis": {
+              "id": {
+                "type": "local",
+                "value": "1234"
+              },
+              "descr": "somedescription",
+              "ttl": "100",
+              "mgmt-ip": "192.0.2.1"
+            },
+            "port": {
+              "id": {
+                "type": "mac",
+                "value": "00:53:00:01:02:03"
+              },
+              "descr": "somedescription"
+            }
+          }
+        },
+        {
+          "Ethernet16": {
+            "via": "LLDP",
+            "rid": "1",
+            "age": "0 day, 02:39:50",
+            "chassis": {
+              "serverhostname1": {
+                "id": {
+                  "type": "mac",
+                  "value": "00:53:00:01:02:03"
+                },
+                "descr": "somedescription",
+                "ttl": "120",
+                "mgmt-ip": [
+                  "192.0.2.1",
+                  "2001:db8::aeb8"
+                ],
+                "capability": [
+                  {
+                    "type": "Bridge",
+                    "enabled": false
+                  },
+                  {
+                    "type": "Router",
+                    "enabled": false
+                  },
+                  {
+                    "type": "Wlan",
+                    "enabled": false
+                  },
+                  {
+                    "type": "Station",
+                    "enabled": true
+                  }
+                ]
+              }
+            },
+            "port": {
+              "id": {
+                "type": "mac",
+                "value": "00:53:00:01:02:03"
+              },
+              "descr": "someotherdescription",
+              "auto-negotiation": {
+                "supported": true,
+                "enabled": true,
+                "advertised": {
+                  "type": "1000Base-X",
+                  "hd": false,
+                  "fd": true
+                },
+                "current": "unknown"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }

@@ -1,0 +1,161 @@
+{
+  "lldp": {
+    "interface": [
+      {
+        "eth0": {
+          "via": "LLDP",
+          "rid": "1",
+          "age": "28 days, 23:23:00",
+          "chassis": {
+            "tor5.0.mgmt": {
+              "id": {
+                "type": "mac",
+                "value": "00:53:00:01:02:03"
+              },
+              "descr": "some OS with version",
+              "ttl": "120",
+              "mgmt-ip": "192.0.2.1",
+              "capability": {
+                "type": "Bridge",
+                "enabled": true
+              }
+            }
+          },
+          "port": {
+            "id": {
+              "type": "ifname",
+              "value": "Ethernet32"
+            },
+            "descr": "superspine1.test:eth0",
+            "mfs": "2044",
+            "auto-negotiation": {
+              "supported": true,
+              "enabled": true,
+              "advertised": [
+                {
+                  "type": "10Base-T",
+                  "hd": false,
+                  "fd": true
+                },
+                {
+                  "type": "1000Base-X",
+                  "hd": true,
+                  "fd": true
+                },
+                {
+                  "type": "1000Base-T",
+                  "hd": true,
+                  "fd": false
+                }
+              ],
+              "current": "full duplex mode"
+            },
+            "power": {
+              "supported": false,
+              "enabled": false,
+              "paircontrol": false,
+              "device-type": "PD",
+              "pairs": "unknown",
+              "class": "unknown"
+            }
+          },
+          "vlan": {
+            "vlan-id": "1234",
+            "pvid": true,
+            "value": "VLAN1234"
+          },
+          "ppvid": {
+            "supported": false,
+            "enabled": false
+          },
+          "lldp-med": {
+            "device-type": "Network Connectivity Device",
+            "capability": [
+              {
+                "type": "Capabilities",
+                "available": false
+              },
+              {
+                "type": "Policy",
+                "available": false
+              },
+              {
+                "type": "MDI/PSE",
+                "available": false
+              },
+              {
+                "type": "MDI/PD",
+                "available": false
+              },
+              {
+                "type": "Inventory",
+                "available": false
+              }
+            ],
+            "policy": {
+              "apptype": "Voice",
+              "defined": false,
+              "vlan": {
+                "vid": "priority"
+              },
+              "priority": "Internetwork control",
+              "pcp": "6",
+              "dscp": "46"
+            },
+            "poe": {
+              "device-type": "unknown",
+              "source": "unknown",
+              "priority": "unknown",
+              "power": "200"
+            },
+            "inventory": {
+              "hardware": "some hardware",
+              "software": "some version",
+              "firmware": "",
+              "serial": "",
+              "manufacturer": "some manufacturer",
+              "model": "",
+              "asset": ""
+            }
+          }
+        }
+      },
+      {
+        "Ethernet124": {
+          "via": "LLDP",
+          "rid": "13",
+          "age": "28 days, 23:13:21",
+          "chassis": {
+            "spine1.test": {
+              "id": {
+                "type": "mac",
+                "value": "00:53:00:01:02:03"
+              },
+              "descr": "some OS with version",
+              "ttl": "120",
+              "mgmt-ip": "192.0.2.45",
+              "capability": [
+                {
+                  "type": "Bridge",
+                  "enabled": true
+                },
+                {
+                  "type": "Router",
+                  "enabled": true
+                }
+              ]
+            }
+          },
+          "port": {
+            "id": {
+              "type": "ifname",
+              "value": "Ethernet1/1"
+            },
+            "descr": "superspine1.test:Ethernet124",
+            "mfs": "9236"
+          }
+        }
+      }
+    ]
+  }
+}

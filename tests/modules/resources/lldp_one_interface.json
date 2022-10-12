@@ -1,0 +1,47 @@
+{
+  "lldp": {
+    "interface": {
+      "Ethernet0": {
+        "via": "LLDP",
+        "rid": "2",
+        "age": "27 days, 23:52:38",
+        "chassis": {
+          "spine1.1.test": {
+            "id": {
+              "type": "mac",
+              "value": "00:53:00:01:02:03"
+            },
+            "descr": "some OS with version",
+            "ttl": "120",
+            "mgmt-ip": "192.0.2.83",
+            "capability": [
+              {
+                "type": "Bridge",
+                "enabled": true
+              },
+              {
+                "type": "Router",
+                "enabled": true
+              },
+              {
+                "type": "Wlan",
+                "enabled": false
+              },
+              {
+                "type": "Station",
+                "enabled": false
+              }
+            ]
+          }
+        },
+        "port": {
+          "id": {
+            "type": "local",
+            "value": "Ethernet0"
+          },
+          "descr": "superspine1.test:Ethernet0"
+        }
+      }
+    }
+  }
+}
