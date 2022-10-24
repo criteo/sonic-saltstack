@@ -1,3 +1,1 @@
-"""
-States Directory
-"""
+"""States Directory."""
