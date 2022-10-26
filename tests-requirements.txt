@@ -1,0 +1,13 @@
+black
+click
+coverage
+pdbpp
+pydocstyle
+pykwalify
+pylama
+pylint
+pyflakes==2.4.0
+pytest
+pytest-benchmark
+pytest-mock
+tox

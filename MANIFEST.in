@@ -1,0 +1,5 @@
+include MANIFEST.in
+
+# These files are referenced from setup.py so we must make sure
+# of including them in the source distribution.
+include tests-requirements.txt
