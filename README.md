@@ -17,7 +17,7 @@ SONiC modules requires some custom script to be installed:
 * /opt/salt/scripts/criteo_fdbshow
 * /opt/salt/scripts/criteo_intf_information
 
-These scripts are available [SONiC utilities](https://github.com/kpetremann/criteo-sonic-utilities)
+These scripts are available [SONiC utilities](https://github.com/criteo/criteo-sonic-utilities)
 
 This code assume some grains are set for each SONiC devices:
     hwsku: some-hardware
@@ -28,4 +28,4 @@ This code assume some grains are set for each SONiC devices:
     sonic_built_by: someone
     sonic_commit_id: some-commit-id
 
-This is set automatically via our [SONiC Salt Deployer](https://github.com/kpetremann/sonic-salt-deployer).
+This is set automatically via our [SONiC Salt Deployer](https://github.com/criteo/sonic-salt-deployer).
