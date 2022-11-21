@@ -948,18 +948,36 @@ def list_all_users():
     return __salt__["user.list_users"]()
 
 
-def psu_status():
-    """Get MAC info using criteo_fdbshow."""
+def _psu_status_legacy():
+    """Get PSU information for legacy SONiC."""
     cmd_output = __salt__["cmd.run"]("show platform psustatus")
 
     parsed_output = re.findall(r"(PSU [0-9]) *([a-zA-Z]+)", cmd_output)
     psu_output = {}
     try:
         for psu_index, _ in enumerate(parsed_output):
-            locals()["psu{}_status".format(psu_index)] = parsed_output[psu_index][1] == "OK"
-            psu_output["Power Supply {} Status".format(psu_index + 1)] = locals()[
-                "psu{}_status".format(psu_index)
-            ]
+            psu_output["Power Supply {} Status".format(psu_index + 1)] = (
+                parsed_output[psu_index][1] == "OK"
+            )
+    except (IndexError, KeyError):
+        return None
+
+    return psu_output
+
+
+def psu_status():
+    """Get PSU information."""
+    cmd_output = __salt__["cmd.run"]("show platform psustatus --json")
+
+    if __context__["retcode"] != 0:
+        return _psu_status_legacy()
+
+    parsed_output = json.loads(cmd_output)
+    psu_output = {}
+    try:
+        for info in parsed_output:
+            index = int(info["index"])
+            psu_output["Power Supply {} Status".format(index)] = info["status"] == "OK"
     except (IndexError, KeyError):
         return None
 
