@@ -9,7 +9,9 @@
 
 BGP configuration modules requires to change FRR implementation in SONiC.
 
-It requires `/etc/frr` of the BGP container to be a mounted volume to `/etc/sonic/frr`. This patch will be shared to the community.
+It requires `/etc/frr` of the BGP container to be a mounted volume to `/etc/sonic/frr`:
+* for SONiC >= 202205, you need to enable [split-unified](https://github.com/sonic-net/sonic-buildimage/commit/9d3814045bf950576bb274180ffec001abac1c32)
+* for SONiC < 202205, you need to apply the [patch manually](https://github.com/criteo/criteo-sonic-utilities#frr-mounted-configuration).
 
 ## Installation
 
