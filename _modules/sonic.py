@@ -4,6 +4,7 @@ SONiC is handled like a Linux server.
 Please keep in mind that in some cases, changing the configuration needs a complete reload of the
 configuration, stopping the service during few seconds.
 """
+# pylint: disable=C0302
 
 import difflib
 import json
@@ -982,3 +983,37 @@ def psu_status():
         return None
 
     return psu_output
+
+
+def fan_status():
+    """Get FAN information."""
+    cmd_output = __salt__["cmd.run"]("show platform fan")
+
+    if not cmd_output:
+        return None
+
+    status_index = 0
+    fan_index = 0
+    lines = cmd_output.split("\n")
+
+    # Find columns of FAN and Status
+    if "Status" in lines[0] and "FAN" in lines[0]:
+        header = lines[0].split()
+        status_index = header.index("Status")
+        fan_index = header.index("FAN")
+    else:
+        return None
+
+    # Extract FAN and Status
+    results = {}
+    try:
+        for line in lines[2:]:
+            columns = line.split()
+            if columns:
+                fan = columns[fan_index]
+                results[fan] = columns[status_index] == "OK"
+    except (IndexError, KeyError):
+        return None
+
+    # Print the results
+    return results
