@@ -5,7 +5,7 @@ import pytest
 
 from salt import exceptions
 
-import _modules.criteo_sonic as EXEC_MOD
+import _modules.sonic as EXEC_MOD
 
 
 def _fan_output_201911(*_, **__):
