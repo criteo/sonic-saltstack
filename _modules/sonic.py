@@ -90,7 +90,7 @@ def get_ip_addresses(interface):
     .. code-block:: python
 
         {
-            "ipv4": ["192.2.0.0/31"],
+            "ipv4": ["192.0.2.0/31"],
             "ipv6": ["2001:db8::/127", "2001:db8::/64"],
         }
     """
@@ -643,18 +643,18 @@ def get_bgp_neighbors(neighbor="", frr_output=False):
 
     .. code-block:: bash
 
-        salt "sonic.tor" sonic.get_bgp_neighbors 192.2.0.1
+        salt "sonic.tor" sonic.get_bgp_neighbors 192.0.2.1
 
     Output example:
 
     .. code-block:: python
 
         {
-            "192.2.0.1": {
+            "192.0.2.1": {
                 "peer_group": "SPINES",
                 "import_policy": "FABRIC-IN",
                 "vrf": "default",
-                "remote_address": "192.2.0.1",
+                "remote_address": "192.0.2.1",
                 "local_as": 65000,
                 "remote_as": 65001,
                 "description": "sonic.spine",
