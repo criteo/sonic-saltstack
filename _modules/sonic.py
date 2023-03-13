@@ -500,6 +500,26 @@ def get_configdb():
     return data_json
 
 
+def get_running_configdb():
+    """Get running config_db configuration.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt "tor1" sonic.get_running_configdb
+    """
+    running_configdb = __salt__["cmd.run"]("show runningconfiguration all")
+
+    # is json ?
+    try:
+        data_json = json.loads(running_configdb)
+    except KeyError as exc:
+        raise CommandExecutionError("Running config_db is not JSON") from exc
+
+    return data_json
+
+
 def _apply_configdb_config(remote_tmpfile):
     # return nothing if done with success
     res = __salt__["cmd.run"]("sudo cp {} {}".format(remote_tmpfile, SONIC_DIR))
