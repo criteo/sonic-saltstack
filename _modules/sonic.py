@@ -122,12 +122,12 @@ def _convert_interface_counters_napalm_fmt(counters):
             "tx_unicast_packets": None,
             "rx_multicast_packets": None,
             "tx_multicast_packets": None,
-            "rx_octets": int(stats.get("RX_OK", "0")),
-            "tx_octets": int(stats.get("TX_OK", "0")),
-            "rx_errors": int(stats.get("RX_ERR", "0")),
-            "rx_discards": int(stats.get("RX_DRP", "0")),
-            "tx_errors": int(stats.get("TX_ERR", "0")),
-            "tx_discards": int(stats.get("TX_DRP", "0")),
+            "rx_octets": int(stats.get("RX_OK", "0").replace(",", "")),
+            "tx_octets": int(stats.get("TX_OK", "0").replace(",", "")),
+            "rx_errors": int(stats.get("RX_ERR", "0").replace(",", "")),
+            "rx_discards": int(stats.get("RX_DRP", "0").replace(",", "")),
+            "tx_errors": int(stats.get("TX_ERR", "0").replace(",", "")),
+            "tx_discards": int(stats.get("TX_DRP", "0").replace(",", "")),
         }
 
     return {"out": data}
