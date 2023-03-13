@@ -12,7 +12,6 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from ipaddress import IPv4Network, ip_address
-from json import JSONDecodeError
 
 import yaml
 from salt.exceptions import CommandExecutionError
@@ -320,12 +319,14 @@ def get_mac_from_port(interface=None, napalm_output=False):
     if interface:
         criteo_fdbshow_command += " -p {}".format(interface)
 
+    # An old version of criteo_fdbshow outputs JSON by default and does not support
+    # the "-j" option, newer version requires "-j" to output JSON.
+    if "201911" not in __salt__["grains.get"]("sonic_build_version"):
+        criteo_fdbshow_command += " -j"
+
     macport_info_output = __salt__["cmd.run"](criteo_fdbshow_command)
 
-    try:
-        macport_info = json.loads(macport_info_output)
-    except JSONDecodeError:
-        return None
+    macport_info = json.loads(macport_info_output)
 
     if napalm_output:
         return _convert_mac_napalm_fmt(macport_info)
@@ -335,12 +336,16 @@ def get_mac_from_port(interface=None, napalm_output=False):
 
 def get_port_from_mac(mac="", napalm_output=False):
     """Get interface of a MAC using criteo_fdbshow."""
-    full_mactable_output = __salt__["cmd.run"]("/usr/bin/python /opt/salt/scripts/criteo_fdbshow")
+    criteo_fdbshow_command = "/usr/bin/python /opt/salt/scripts/criteo_fdbshow"
 
-    try:
-        full_mactable = json.loads(full_mactable_output)
-    except KeyError:
-        return None
+    # An old version of criteo_fdbshow outputs JSON by default and does not support
+    # the "-j" option, newer version requires "-j" to output JSON.
+    if "201911" not in __salt__["grains.get"]("sonic_build_version"):
+        criteo_fdbshow_command += " -j"
+
+    full_mactable_output = __salt__["cmd.run"](criteo_fdbshow_command)
+
+    full_mactable = json.loads(full_mactable_output)
 
     macport_info = [x for x in full_mactable if x["MacAddress"] == mac]
 
