@@ -22,12 +22,14 @@ SONiC modules requires some custom script to be installed:
 These scripts are available [SONiC utilities](https://github.com/criteo/criteo-sonic-utilities)
 
 This code assume some grains are set for each SONiC devices:
-    hwsku: some-hardware
-    nos: sonic
-    sonic_asic_type: some-asic
-    sonic_build_date: some-date
-    sonic_build_version: 201911
-    sonic_built_by: someone
-    sonic_commit_id: some-commit-id
+```yaml
+hwsku: some-hardware
+nos: sonic
+sonic_asic_type: some-asic
+sonic_build_date: some-date
+sonic_build_version: 201911
+sonic_built_by: someone
+sonic_commit_id: some-commit-id
+```
 
 This is set automatically via our [SONiC Salt Deployer](https://github.com/criteo/sonic-salt-deployer).
