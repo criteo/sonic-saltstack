@@ -15,4 +15,4 @@ Follow usual best practices:
   * constants are in upper case
   * use comprehensible variable name
   * one function = one purpose
-  * function names should perfectly define their purpose
+  * function name should perfectly define their purpose
