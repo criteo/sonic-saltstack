@@ -1,9 +1,13 @@
 # SONiC Saltstack modules
 
+> This repository is part of [AFK](https://criteo.github.io/AFK).
+
+The full documentation can be found here: [AFK documentation](https://criteo.github.io/AFK/SONiC-support/SONiC-modules/)
+
 ## Current supported versions
 
 * 201911
-* 202205 (soon)
+* 202205
 
 ## BGP requirements
 
@@ -33,3 +37,7 @@ sonic_commit_id: some-commit-id
 ```
 
 This is automatically set by our [SONiC Salt Deployer](https://github.com/criteo/sonic-salt-deployer).
+
+## How to contribute
+
+see [CONTRIBUTING.md](CONTRIBUTING.md)

@@ -4,6 +4,8 @@
 
 **unit and functionals tests** are mandatory.
 
+Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
+
 Please ensure you have run the following before pushing a commit:
   * `black` and `isort` (or `invoke reformat`)
   * `tox` to run all linters
