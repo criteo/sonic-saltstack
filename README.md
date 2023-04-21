@@ -3,7 +3,7 @@
 ## Current supported versions
 
 * 201911
-* 202205 (soon)
+* 202205
 
 ## BGP requirements
 

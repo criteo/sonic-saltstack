@@ -13,7 +13,6 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from ipaddress import IPv4Network, ip_address
-from json import JSONDecodeError
 
 import yaml
 from salt.exceptions import CommandExecutionError
@@ -91,7 +90,7 @@ def get_ip_addresses(interface):
     .. code-block:: python
 
         {
-            "ipv4": ["192.2.0.0/31"],
+            "ipv4": ["192.0.2.0/31"],
             "ipv6": ["2001:db8::/127", "2001:db8::/64"],
         }
     """
@@ -124,12 +123,12 @@ def _convert_interface_counters_napalm_fmt(counters):
             "tx_unicast_packets": None,
             "rx_multicast_packets": None,
             "tx_multicast_packets": None,
-            "rx_octets": int(stats.get("RX_OK", "0")),
-            "tx_octets": int(stats.get("TX_OK", "0")),
-            "rx_errors": int(stats.get("RX_ERR", "0")),
-            "rx_discards": int(stats.get("RX_DRP", "0")),
-            "tx_errors": int(stats.get("TX_ERR", "0")),
-            "tx_discards": int(stats.get("TX_DRP", "0")),
+            "rx_octets": int(stats.get("RX_OK", "0").replace(",", "")),
+            "tx_octets": int(stats.get("TX_OK", "0").replace(",", "")),
+            "rx_errors": int(stats.get("RX_ERR", "0").replace(",", "")),
+            "rx_discards": int(stats.get("RX_DRP", "0").replace(",", "")),
+            "tx_errors": int(stats.get("TX_ERR", "0").replace(",", "")),
+            "tx_discards": int(stats.get("TX_DRP", "0").replace(",", "")),
         }
 
     return {"out": data}
@@ -321,12 +320,14 @@ def get_mac_from_port(interface=None, napalm_output=False):
     if interface:
         criteo_fdbshow_command += " -p {}".format(interface)
 
+    # An old version of criteo_fdbshow outputs JSON by default and does not support
+    # the "-j" option, newer version requires "-j" to output JSON.
+    if "201911" not in __salt__["grains.get"]("sonic_build_version"):
+        criteo_fdbshow_command += " -j"
+
     macport_info_output = __salt__["cmd.run"](criteo_fdbshow_command)
 
-    try:
-        macport_info = json.loads(macport_info_output)
-    except JSONDecodeError:
-        return None
+    macport_info = json.loads(macport_info_output)
 
     if napalm_output:
         return _convert_mac_napalm_fmt(macport_info)
@@ -336,12 +337,16 @@ def get_mac_from_port(interface=None, napalm_output=False):
 
 def get_port_from_mac(mac="", napalm_output=False):
     """Get interface of a MAC using criteo_fdbshow."""
-    full_mactable_output = __salt__["cmd.run"]("/usr/bin/python /opt/salt/scripts/criteo_fdbshow")
+    criteo_fdbshow_command = "/usr/bin/python /opt/salt/scripts/criteo_fdbshow"
 
-    try:
-        full_mactable = json.loads(full_mactable_output)
-    except KeyError:
-        return None
+    # An old version of criteo_fdbshow outputs JSON by default and does not support
+    # the "-j" option, newer version requires "-j" to output JSON.
+    if "201911" not in __salt__["grains.get"]("sonic_build_version"):
+        criteo_fdbshow_command += " -j"
+
+    full_mactable_output = __salt__["cmd.run"](criteo_fdbshow_command)
+
+    full_mactable = json.loads(full_mactable_output)
 
     macport_info = [x for x in full_mactable if x["MacAddress"] == mac]
 
@@ -496,6 +501,26 @@ def get_configdb():
     return data_json
 
 
+def get_running_configdb():
+    """Get running config_db configuration.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt "tor1" sonic.get_running_configdb
+    """
+    running_configdb = __salt__["cmd.run"]("show runningconfiguration all")
+
+    # is json ?
+    try:
+        data_json = json.loads(running_configdb)
+    except KeyError as exc:
+        raise CommandExecutionError("Running config_db is not JSON") from exc
+
+    return data_json
+
+
 def _apply_configdb_config(remote_tmpfile):
     # return nothing if done with success
     res = __salt__["cmd.run"]("sudo cp {} {}".format(remote_tmpfile, SONIC_DIR))
@@ -644,18 +669,18 @@ def get_bgp_neighbors(neighbor="", frr_output=False):
 
     .. code-block:: bash
 
-        salt "sonic.tor" sonic.get_bgp_neighbors 192.2.0.1
+        salt "sonic.tor" sonic.get_bgp_neighbors 192.0.2.1
 
     Output example:
 
     .. code-block:: python
 
         {
-            "192.2.0.1": {
+            "192.0.2.1": {
                 "peer_group": "SPINES",
                 "import_policy": "FABRIC-IN",
                 "vrf": "default",
-                "remote_address": "192.2.0.1",
+                "remote_address": "192.0.2.1",
                 "local_as": 65000,
                 "remote_as": 65001,
                 "description": "sonic.spine",
