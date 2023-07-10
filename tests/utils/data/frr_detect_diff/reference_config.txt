@@ -1,0 +1,188 @@
+hostname ra01.01.jp2.pnet.crto.io
+log syslog informational
+log facility local4
+agentx
+!
+! bgp multiple-instance
+!
+ip prefix-list PF-DEFAULT seq 10 permit 0.0.0.0/0
+ip prefix-list PF-IPMI seq 10 permit 172.20.224.0/20
+ip prefix-list PF-LOOPBACK_IPV4 seq 10 permit 10.252.168.0/22 le 32
+ip prefix-list PF-RFC6598 seq 10 permit 100.64.0.0/10
+ip prefix-list PF-SERVER_IPV4 seq 10 permit 10.180.0.0/14 le 32
+!
+ipv6 prefix-list PF-ANY_IPV6 seq 10 permit ::/0 le 128
+!
+ipv6 prefix-list PF-LOOPBACK_IPV6 seq 10 permit 2406:2600:fffd:ff01::/64 le 128
+!
+ipv6 prefix-list PF-SERVER_IPV6 seq 10 permit fd09::/16 le 128
+!
+!
+bgp community-list expanded CL-CLOS_SERVER permit 64985:40200
+bgp community-list expanded CL-CLOS_INFRA permit 64985:40100
+bgp community-list expanded CL-64985_LOCAL permit 64985:4....
+bgp community-list expanded CL-IPMI permit 64985:52010
+bgp community-list expanded CL-64985_SERVICE permit 64985:5....
+bgp community-list expanded CL-VIP_MAIN permit 649..:50010
+bgp community-list expanded CL-VIP_FAILOVER permit 649..:50011
+bgp community-list expanded CL-CRITEO_SERVICE permit 649..:5....
+bgp community-list expanded CL-64985_DEFAULT permit 64985:60000
+bgp community-list expanded CL-LOCATION permit 64985:65001
+!
+!
+route-map RM-CLOS-IN permit 10
+   match ipv6 address prefix-list PF-ANY_IPV6
+   set ipv6 next-hop prefer-global
+   on-match next
+!
+route-map RM-CLOS-IN permit 20
+   match community CL-64985_LOCAL
+   set local-preference 100
+!
+route-map RM-CLOS-IN permit 30
+   match community CL-VIP_MAIN
+   set local-preference 150
+!
+route-map RM-CLOS-IN permit 40
+   match community CL-CRITEO_SERVICE
+   set local-preference 100
+!
+route-map RM-CLOS-IN permit 50
+   match community CL-64985_DEFAULT
+!
+route-map RM-CLOS-OUT permit 10
+   match community CL-64985_LOCAL
+!
+route-map RM-CLOS-OUT permit 20
+   match community CL-CRITEO_SERVICE
+!
+route-map RM-CLOS-OUT permit 30
+   match community CL-64985_DEFAULT
+!
+route-map RM-CLOS-OUT permit 40
+   match ip address prefix-list PF-LOOPBACK_IPV4
+   match source-protocol connected
+   set community 64985:40100 64985:65001
+!
+route-map RM-CLOS-OUT permit 50
+   match ip address prefix-list PF-SERVER_IPV4
+   match source-protocol connected
+   set community 64985:40200 64985:65001
+!
+route-map RM-CLOS-OUT permit 60
+   match ipv6 address prefix-list PF-LOOPBACK_IPV6
+   match source-protocol connected
+   set community 64985:40100 64985:65001
+!
+route-map RM-CLOS-OUT permit 70
+   match ipv6 address prefix-list PF-SERVER_IPV6
+   match source-protocol connected
+   set community 64985:40200 64985:65001
+!
+route-map RM-CLOS_MAINTENANCE-OUT permit 10
+   match community CL-64985_LOCAL
+   set as-path prepend 65001
+!
+route-map RM-CLOS_MAINTENANCE-OUT permit 20
+   match community CL-CRITEO_SERVICE
+   set as-path prepend 65001
+!
+route-map RM-CLOS_MAINTENANCE-OUT permit 30
+   match community CL-64985_DEFAULT
+   set as-path prepend 65001
+!
+route-map RM-CLOS_MAINTENANCE-OUT permit 40
+   match ip address prefix-list PF-LOOPBACK_IPV4
+   match source-protocol connected
+   set as-path prepend 65001
+   set community 64985:40100 64985:65001
+!
+route-map RM-CLOS_MAINTENANCE-OUT permit 50
+   match ip address prefix-list PF-SERVER_IPV4
+   match source-protocol connected
+   set as-path prepend 65001
+   set community 64985:40200 64985:65001
+!
+route-map RM-CLOS_MAINTENANCE-OUT permit 60
+   match ipv6 address prefix-list PF-LOOPBACK_IPV6
+   match source-protocol connected
+   set as-path prepend 65001
+   set community 64985:40100 64985:65001
+!
+route-map RM-CLOS_MAINTENANCE-OUT permit 70
+   match ipv6 address prefix-list PF-SERVER_IPV6
+   match source-protocol connected
+   set as-path prepend 65001
+   set community 64985:40200 64985:65001
+!
+route-map RM-CLOS_MAINTENANCE_DEFAULT-OUT permit 10
+   match community CL-64985_DEFAULT
+   set as-path prepend 65001
+!
+route-map RM-DENY deny 10
+!
+router bgp 65001
+   bgp graceful-restart restart-time 240
+   bgp graceful-restart
+   bgp graceful-restart preserve-fw-state
+   bgp log-neighbor-changes
+   bgp bestpath as-path multipath-relax
+   distance bgp 20 200 200
+   bgp router-id 10.252.168.5
+   neighbor PG-L3_SP peer-group
+   neighbor PG-L3_SP remote-as 65501
+   neighbor PG-L3_SP description SP
+   address-family ipv4 unicast
+     maximum-paths 32
+     neighbor PG-L3_SP route-map RM-CLOS-IN in
+     neighbor PG-L3_SP route-map RM-CLOS-OUT out
+     neighbor PG-L3_SP send-community
+     neighbor PG-L3_SP maximum-prefix 10000
+     neighbor PG-L3_SP soft-reconfiguration inbound
+     neighbor PG-L3_SP activate
+   exit-address-family
+!
+   address-family ipv6 unicast
+     maximum-paths 32
+     neighbor PG-L3_SP route-map RM-CLOS-IN in
+     neighbor PG-L3_SP route-map RM-CLOS-OUT out
+     neighbor PG-L3_SP send-community
+     neighbor PG-L3_SP maximum-prefix 10000
+     neighbor PG-L3_SP soft-reconfiguration inbound
+     neighbor PG-L3_SP activate
+   exit-address-family
+!
+   neighbor 100.64.1.1 peer-group PG-L3_SP
+   neighbor 100.64.1.1 description MON:PG-L3_SP:sp01.01.jp2.pnet.crto.io
+   neighbor 100.64.1.145 peer-group PG-L3_SP
+   neighbor 100.64.1.145 description MON:PG-L3_SP:sp04.01.jp2.pnet.crto.io
+   neighbor 100.64.1.49 peer-group PG-L3_SP
+   neighbor 100.64.1.49 description MON:PG-L3_SP:sp02.01.jp2.pnet.crto.io
+   neighbor 100.64.1.97 peer-group PG-L3_SP
+   neighbor 100.64.1.97 description MON:PG-L3_SP:sp03.01.jp2.pnet.crto.io
+   neighbor 2406:2600:fffd:fffe:f01:0:1:101 peer-group PG-L3_SP
+   neighbor 2406:2600:fffd:fffe:f01:0:1:101 description MON:PG-L3_SP:sp01.01.jp2.pnet.crto.io
+   neighbor 2406:2600:fffd:fffe:f01:0:1:201 peer-group PG-L3_SP
+   neighbor 2406:2600:fffd:fffe:f01:0:1:201 description MON:PG-L3_SP:sp02.01.jp2.pnet.crto.io
+   neighbor 2406:2600:fffd:fffe:f01:0:1:301 peer-group PG-L3_SP
+   neighbor 2406:2600:fffd:fffe:f01:0:1:301 description MON:PG-L3_SP:sp03.01.jp2.pnet.crto.io
+   neighbor 2406:2600:fffd:fffe:f01:0:1:401 peer-group PG-L3_SP
+   neighbor 2406:2600:fffd:fffe:f01:0:1:401 description MON:PG-L3_SP:sp04.01.jp2.pnet.crto.io
+   !
+   address-family ipv4 unicast
+      no neighbor 2406:2600:fffd:fffe:f01:0:1:101 activate
+      no neighbor 2406:2600:fffd:fffe:f01:0:1:201 activate
+      no neighbor 2406:2600:fffd:fffe:f01:0:1:301 activate
+      no neighbor 2406:2600:fffd:fffe:f01:0:1:401 activate
+      network 10.252.168.5/32
+      network 10.180.1.0/25
+      network 10.180.1.128/25
+   !
+   address-family ipv6 unicast
+      no neighbor 100.64.1.1 activate
+      no neighbor 100.64.1.145 activate
+      no neighbor 100.64.1.49 activate
+      no neighbor 100.64.1.97 activate
+      network 2406:2600:fffd:ff01:101::100/128
+      network fd09:0:100::/64
+!

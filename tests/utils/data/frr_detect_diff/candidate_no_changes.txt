@@ -1,0 +1,16 @@
+route-map RM-CLOS-IN permit 10
+   match ipv6 address prefix-list PF-ANY_IPV6
+   set ipv6 next-hop prefer-global
+   on-match next
+!
+route-map RM-CLOS-IN permit 20
+   match community CL-64985_LOCAL
+   set local-preference 100
+!
+route-map RM-CLOS-IN permit 30
+   match community CL-VIP_MAIN
+   set local-preference 150
+!
+route-map RM-CLOS-IN permit 40
+   match community CL-CRITEO_SERVICE
+   set local-preference 100
