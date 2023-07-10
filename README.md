@@ -20,8 +20,8 @@ It requires `/etc/frr` of the BGP container to be a mounted volume to `/etc/soni
 ## Installation
 
 SONiC modules require some custom script to be installed:
-* /opt/salt/scripts/criteo_fdbshow
-* /opt/salt/scripts/criteo_intf_information
+* `/opt/salt/scripts/criteo_fdbshow`
+* `/opt/salt/scripts/criteo_intf_information`
 
 These scripts are available [SONiC utilities](https://github.com/criteo/criteo-sonic-utilities)
 
@@ -40,4 +40,4 @@ This is automatically set by our [SONiC Salt Deployer](https://github.com/criteo
 
 ## How to contribute
 
-see [CONTRIBUTING.md](CONTRIBUTING.md)
+See [CONTRIBUTING.md](CONTRIBUTING.md)
