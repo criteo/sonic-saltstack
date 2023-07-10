@@ -1,0 +1,21 @@
+ip prefix-list PF-DEFAULT seq 10 permit 0.0.0.0/0
+ip prefix-list PF-DEFAULT seq 20 permit 0.0.0.0/32
+!
+ip prefix-list PF-IPMI seq 10 permit 172.20.224.0/20
+!
+bgp community-list expanded CL-CLOS_SERVER permit 64985:8888
+bgp community-list expanded CL-CLOS_INFRA permit 64985:40100
+!
+route-map RM-CLOS-IN permit 10
+   match ipv6 address prefix-list PF-ANY_IPV6
+   set ipv6 next-hop prefer-global
+   on-match next
+route-map RM-CLOS-IN permit 20
+   match community CL-64985_LOCAL
+   set local-preference 100
+route-map RM-CLOS-IN permit 30
+   match community CL-VIP_MAIN
+   set local-preference 150
+route-map RM-CLOS-IN permit 40
+   match community CL-CRITEO_SERVICE
+   set local-preference 100
