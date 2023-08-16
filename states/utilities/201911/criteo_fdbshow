@@ -1,0 +1,156 @@
+#!/usr/bin/python
+"""
+    This file is a modified version fdbshow in https://github.com/sonic-net/sonic-utilities
+    It adds JSON output support.
+
+    Script to show MAC/FDB entries learnt in Hardware / fixed from fdbshow in 201911
+    In long term, this will be replaced by the official sonic-utilies version (in python3).
+
+    usage: criteo_fdbshow [-p PORT] [-v VLAN]
+    optional arguments:
+      -p,  --port              FDB learned on specific port: Ethernet0
+      -v,  --vlan              FDB learned on specific Vlan: 1000
+
+    Examples of the output:
+
+    $ ./criteo_fdbshow -v 1234
+    [{"MacAddress": "00:53:00:01:02:03", "No.": 1, "Vlan": 1234, "Type": "Dynamic", "Port": "Ethernet0"}, 000]
+
+    $ ./criteo_fdbshow -p Ethernet0
+    [{"MacAddress": "00:53:00:01:02:03", "No.": 1, "Vlan": 1234, "Type": "Dynamic", "Port": "Ethernet0"}, ...]
+
+"""
+import argparse
+import json
+import sys
+
+from natsort import natsorted
+from swsssdk import SonicV2Connector, port_util
+
+class FdbShow(object):
+
+    HEADER = ['No.', 'Vlan', 'MacAddress', 'Port', 'Type']
+    FDB_COUNT = 0
+
+    def __init__(self):
+        super(FdbShow,self).__init__()
+        self.db = SonicV2Connector(host="127.0.0.1")
+        self.if_name_map, \
+        self.if_oid_map = port_util.get_interface_oid_map(self.db)
+        self.if_br_oid_map = port_util.get_bridge_port_map(self.db)
+        self.fetch_fdb_data()
+        return
+
+    def fetch_fdb_data(self):
+        """
+            Fetch FDB entries from ASIC DB.
+            FDB entries are sorted on "VlanID" and stored as a list of tuples
+        """
+        self.db.connect(self.db.ASIC_DB)
+        self.bridge_mac_list = []
+
+        fdb_str = self.db.keys('ASIC_DB', "ASIC_STATE:SAI_OBJECT_TYPE_FDB_ENTRY:*")
+        if not fdb_str:
+            return
+
+        if self.if_br_oid_map is None:
+            return
+
+        oid_pfx = len("oid:0x")
+        for s in fdb_str:
+            fdb_entry = s.decode()
+            fdb = json.loads(fdb_entry .split(":", 2)[-1])
+            if not fdb:
+                continue
+
+            ent = self.db.get_all('ASIC_DB', s, blocking=True)
+            br_port_id = ent[b"SAI_FDB_ENTRY_ATTR_BRIDGE_PORT_ID"][oid_pfx:]
+            ent_type = ent[b"SAI_FDB_ENTRY_ATTR_TYPE"]
+            fdb_type = ['Dynamic','Static'][ent_type == "SAI_FDB_ENTRY_TYPE_STATIC"]
+            if br_port_id not in self.if_br_oid_map:
+                continue
+            port_id = self.if_br_oid_map[br_port_id]
+            if port_id in self.if_oid_map:
+                if_name = self.if_oid_map[port_id]
+            else:
+                if_name = port_id
+            if 'vlan' in fdb:
+                vlan_id = fdb["vlan"]
+            elif 'bvid' in fdb:
+                try:
+                    vlan_id = port_util.get_vlan_id_from_bvid(self.db, fdb["bvid"])
+                    if vlan_id is None:
+                        # the situation could be faced if the system has an FDB entries,
+                        # which are linked to default Vlan(caused by untagged trafic)
+                        continue
+                except:
+                    vlan_id = fdb["bvid"]
+                    # print "Failed to get Vlan id for bvid {}\n".format(fdb["bvid"])
+
+            try:
+                self.bridge_mac_list.append((int(vlan_id),) + (fdb["mac"],) + (if_name,) + (fdb_type,))
+            except ValueError:
+                continue
+
+        self.bridge_mac_list.sort(key = lambda x: x[0])
+        return
+
+
+    def get_iter_index(self, key_value=0, pos=0):
+        """
+            Get the starting index of matched entry
+        """
+        if pos != 0:
+            self.bridge_mac_list = natsorted(self.bridge_mac_list, key = lambda x: x[pos])
+
+        if key_value == 0:
+            return 0
+
+        keys = [r[pos] for r in self.bridge_mac_list]
+        return keys.index(key_value)
+
+
+    def display(self, vlan, port):
+        """
+            Display the FDB entries for specified vlan/port.
+            @todo: - PortChannel support
+        """
+        output = []
+
+        if vlan is not None:
+            vlan = int(vlan)
+            s_index = self.get_iter_index(vlan)
+            self.bridge_mac_list = [fdb for fdb in self.bridge_mac_list[s_index:]
+                                    if fdb[0] == vlan]
+        if port is not None:
+            s_index = self.get_iter_index(port, 2)
+            self.bridge_mac_list = [fdb for fdb in self.bridge_mac_list[s_index:]
+                                    if fdb[2] == port]
+
+        for fdb in self.bridge_mac_list:
+            self.FDB_COUNT += 1
+            entry = [self.FDB_COUNT, fdb[0], fdb[1], fdb[2], fdb[3]]
+            zipped_entry = dict(zip(self.HEADER, entry))
+            output.append(zipped_entry)
+
+        print json.dumps(output)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Display ASIC FDB entries',
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('-p', '--port', type=str, help='FDB learned on specific port: Ethernet0', default=None)
+    parser.add_argument('-v', '--vlan', type=str, help='FDB learned on specific Vlan: 1001', default=None)
+    # the -j arg is not used, it is just here to ensure compatibility with the >= 202205 script version
+    parser.add_argument('-j', '--json', action='store_true', help='JSON output')
+    args = parser.parse_args()
+
+    try:
+        fdb = FdbShow()
+        fdb.display(args.vlan, args.port)
+    except Exception as e:
+        print e.message
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

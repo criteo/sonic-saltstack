@@ -1,0 +1,189 @@
+#!/usr/bin/python
+"""
+    This file is derivated from scripts in https://github.com/sonic-net/sonic-utilities
+    It merges several interface information into a single command.
+"""
+
+import json
+import swsssdk
+import sys
+import re
+from swsssdk import ConfigDBConnector
+
+
+PORT_STATUS_TABLE_PREFIX = "PORT_TABLE:"
+PORT_TRANSCEIVER_TABLE_PREFIX = "TRANSCEIVER_INFO|"
+PORT_TRANSCEIVER_DOM_TABLE_PREFIX = "TRANSCEIVER_DOM_SENSOR|"
+PORT_LANES_STATUS = "lanes"
+PORT_ALIAS = "alias"
+PORT_OPER_STATUS = "oper_status"
+PORT_ADMIN_STATUS = "admin_status"
+PORT_SPEED = "speed"
+PORT_MTU_STATUS = "mtu"
+PORT_DESCRIPTION = "description"
+PORT_OPTICS_TYPE = "type"
+PORT_OPTICS_MODEL = "modelname"
+PORT_OPTICS_MANUFACTURER = "manufacturename"
+PORT_OPTICS_SENSOR_RX = "rx{}power"
+PORT_OPTICS_SENSOR_TX = "tx{}power"
+PORT_PFC_ASYM_STATUS = "pfc_asym"
+
+
+def db_connect_configdb():
+    """
+    Connect to configdb
+    """
+    config_db = ConfigDBConnector()
+    if config_db is None:
+        return None
+    config_db.connect()
+    return config_db
+
+
+def get_frontpanel_port_list(config_db):
+    ports_dict = config_db.get_table('PORT')
+    front_panel_ports_list = []
+    for port in ports_dict.iterkeys():
+        front_panel_ports_list.append(port)
+    return front_panel_ports_list
+
+
+def db_connect_appl():
+    appl_db = swsssdk.SonicV2Connector(host='127.0.0.1')
+    if appl_db is None:
+        return None
+    appl_db.connect(appl_db.APPL_DB)
+    return appl_db
+
+
+def appl_db_keys_get(appl_db, front_panel_ports_list, intf_name):
+    """
+    Get APPL_DB Keys
+    """
+    if intf_name is None:
+        appl_db_keys = appl_db.keys(appl_db.APPL_DB, "PORT_TABLE:*")
+    elif intf_name in front_panel_ports_list:
+        appl_db_keys = appl_db.keys(appl_db.APPL_DB, "PORT_TABLE:%s" % intf_name)
+    else:
+        return None
+    return appl_db_keys
+
+
+def appl_db_port_status_get(appl_db, intf_name, status_type):
+    """
+    Get the port status
+    """
+    full_table_id = PORT_STATUS_TABLE_PREFIX + intf_name
+    status = appl_db.get(appl_db.APPL_DB, full_table_id, status_type)
+    if status is None:
+        return "N/A"
+    if status_type == PORT_SPEED and status != "N/A":
+       status = '{}G'.format(status[:-3])
+    return status
+
+
+def db_connect_state():
+    """
+    Connect to REDIS STATE DB and get optics info
+    """
+    state_db = swsssdk.SonicV2Connector(host='127.0.0.1')
+    if state_db is None:
+        return None
+    state_db.connect(state_db.STATE_DB, False)   # Make one attempt only
+    return state_db
+
+
+def state_db_port_optics_get(state_db, intf_name, field):
+    """
+    Get optic info for port
+    """
+    full_table_id = PORT_TRANSCEIVER_TABLE_PREFIX + intf_name
+    info = state_db.get(state_db.STATE_DB, full_table_id, field)
+    if info is None:
+        return "N/A"
+    return info
+
+
+def state_db_port_optics_sensors_get(state_db, intf_name, field):
+    """
+    Get optic sensor info for port
+    """
+    full_table_id = PORT_TRANSCEIVER_DOM_TABLE_PREFIX + intf_name
+    info = state_db.get(state_db.STATE_DB, full_table_id, field)
+    if info is None:
+        return "N/A"
+    return info
+
+
+class IntfInformation(object):
+
+    def display_intf_information(self, appl_db_keys, front_panel_ports_list):
+        """
+            Get information related to an interface
+        """
+
+        i = {}
+        key = []
+        interfaces = {}
+
+        #
+        # Iterate through all the keys and append port's associated state to
+        # the result table.
+        #
+        for i in appl_db_keys:
+            key = re.split(':', i, maxsplit=1)[-1].strip()
+
+            if key in front_panel_ports_list:
+                lanes = appl_db_port_status_get(self.appl_db, key, PORT_LANES_STATUS)
+                nb_lanes = len(lanes.split(","))
+
+                interfaces[key] = {
+                    "alias": appl_db_port_status_get(self.appl_db, key, PORT_ALIAS),
+                    "description": appl_db_port_status_get(self.appl_db, key, PORT_DESCRIPTION),
+                    "admin_status": appl_db_port_status_get(self.appl_db, key, PORT_ADMIN_STATUS),
+                    "oper_status": appl_db_port_status_get(self.appl_db, key, PORT_OPER_STATUS),
+                    "lanes": lanes,
+                    "speed": appl_db_port_status_get(self.appl_db, key, PORT_SPEED),
+                    "mtu": appl_db_port_status_get(self.appl_db, key, PORT_MTU_STATUS),
+                    "optic_type": state_db_port_optics_get(self.state_db, key, PORT_OPTICS_TYPE),
+                    "optic_model": state_db_port_optics_get(self.state_db, key, PORT_OPTICS_MODEL),
+                    "optic_manufacturer": state_db_port_optics_get(self.state_db, key, PORT_OPTICS_MANUFACTURER),
+                }
+
+                for i in range(1, nb_lanes + 1):
+                    interfaces[key]["rx{}_power".format(i)] = state_db_port_optics_sensors_get(self.state_db, key, PORT_OPTICS_SENSOR_RX.format(i))
+                    interfaces[key]["tx{}_power".format(i)] = state_db_port_optics_sensors_get(self.state_db, key, PORT_OPTICS_SENSOR_TX.format(i))
+
+
+        print json.dumps(interfaces)
+
+    def __init__(self, intf_name):
+
+        self.config_db = db_connect_configdb()
+        self.state_db = db_connect_state()
+        self.appl_db = db_connect_appl()
+        if self.appl_db is None:
+            return
+        if self.config_db is None:
+            return
+        self.front_panel_ports_list = get_frontpanel_port_list(self.config_db)
+        appl_db_keys = appl_db_keys_get(self.appl_db, self.front_panel_ports_list, intf_name)
+        if appl_db_keys is None:
+            return
+
+        self.display_intf_information(appl_db_keys, self.front_panel_ports_list)
+
+
+def main(args):
+    if len(args) == 0:
+        print "No valid arguments provided"
+        return
+
+    intf_name = args[1] if len(args) == 2 else None
+
+    IntfInformation(intf_name)
+
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main(sys.argv)
