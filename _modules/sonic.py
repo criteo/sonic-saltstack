@@ -4,6 +4,7 @@ SONiC is handled like a Linux server.
 Please keep in mind that in some cases, changing the configuration needs a complete reload of the
 configuration, stopping the service during few seconds.
 """
+
 # pylint: disable=C0302
 
 import difflib
@@ -443,27 +444,36 @@ def snmp_config(template_name, context=None, saltenv="base", test=False):
     remote_tmpfile = "/etc/sonic/tmp/snmp.yml"
     __salt__["file.write"](remote_tmpfile, rendered)
 
-    if not test:
-        current = str(get_snmp_config())
-        out = _apply_snmp_config(remote_tmpfile)
-        if __context__["retcode"] != 0:
-            __salt__["file.remove"](remote_tmpfile)
-            __context__["retcode"] = 1
-            raise CommandExecutionError("Unable to push snmp configuration: {}".format(out))
-        new_config = str(get_snmp_config())
+    result = None
 
-        changes = _diff(current, new_config)
-        changed = bool(changes)
-        comment = "- Configuration pushed and loaded"
-    else:
+    current = str(get_snmp_config())
+    expected = str(yaml.safe_load(rendered))
+    changes = _diff(current, expected)
+
+    if test:
+        result = None if changes else True
+        comment = "- Configuration expected:\n{}\n- Changes needed:\n{}".format(rendered, changes)
         changes = None
-        changed = None
-        comment = "- Configuration discarded:\n{}".format(rendered)
+
+    else:
+        if changes:
+            out = _apply_snmp_config(remote_tmpfile)
+            if __context__["retcode"] != 0:
+                __salt__["file.remove"](remote_tmpfile)
+                __context__["retcode"] = 1
+                raise CommandExecutionError(
+                    "Unable to push snmp configuration: {}, change {}".format(out, changes)
+                )
+            comment = "- Configuration pushed and loaded"
+        else:
+            comment = "- No change detected"
+
+        result = True
 
     __salt__["file.remove"](remote_tmpfile)
 
     return {
-        "result": changed,
+        "result": result,
         "dry_run": test,
         "changes": changes,
         "comment": comment,
