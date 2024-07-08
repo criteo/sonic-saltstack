@@ -12,6 +12,7 @@ There are four main parts in SONiC configuration:
 Except for BGP, a change can cause to a service unavailability (docker containers need to be
 rebooted when config is changed)
 """
+
 from salt.exceptions import CommandExecutionError
 
 __virtualname__ = "sonic"
