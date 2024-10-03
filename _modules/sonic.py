@@ -811,16 +811,8 @@ def get_route_maps():
             "FABRIC-IN",
         ]
     """
-    # for now we only need the name of the route-maps, ? is a small hack
-    route_map = __salt__["cmd.run"]("show route-map ?", "").split("\n")
-
-    # doing some cleaning
-    del route_map[2]
-    del route_map[1]
-    del route_map[0]
-    route_map = [r.strip() for r in route_map]
-
-    return route_map
+    cmd = "vtysh -c 'show route-map' | awk '/route-map/ {print $2}' | sort -u"
+    return __salt__["cmd.shell"](cmd).split("\n")
 
 
 def _upload_candidate_bgp_config(remote_tmpfile, content):
