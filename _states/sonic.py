@@ -84,7 +84,7 @@ def managed(name, templates, context=None, saltenv="base", reload_conf=False):
     return ret
 
 
-def add_user(name, password, public_keys, groups, gid=None, clear_password=True):
+def add_user(name, password, public_keys, groups, gid=None, clear_password=True):  # noqa: R0917
     """Add user.
 
     To avoid issues, users must have at least a password or a ssh key.
