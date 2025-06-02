@@ -531,6 +531,19 @@ def get_running_configdb():
     return data_json
 
 
+def save_running_configdb():
+    """Save running config_db configuration to startup config_db configuration.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt "sonic.tor" sonic.save_running_configdb
+    """
+    __salt__["cmd.run"]("config save")
+    return True
+
+
 def _apply_configdb_config(remote_tmpfile):
     # return nothing if done with success
     res = __salt__["cmd.run"]("sudo cp {} {}".format(remote_tmpfile, SONIC_DIR))
